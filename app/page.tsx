@@ -31,12 +31,20 @@ import {
     RiListCheck3,
     RiSaveLine,
 } from '@remixicon/react'
+import { Badge } from '@/components/ui/badge'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface Task {
     id: string
     text: string
     createdAt: number
     completed: boolean
+    priority?: 'high' | 'medium' | 'low'
 }
 
 interface TimerConfig {
@@ -157,10 +165,61 @@ export default function BreakScheduler() {
                     text: taskInput.trim(),
                     createdAt: Date.now(),
                     completed: false,
+                    priority: undefined,
                 },
             ])
             setTaskInput('')
         }
+    }
+
+    const handlePriorityChange = (
+        taskId: string,
+        priority: 'high' | 'medium' | 'low' | undefined
+    ) => {
+        setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+                task.id === taskId ? { ...task, priority } : task
+            )
+        )
+    }
+
+    const priorityOrder = { high: 1, medium: 2, low: 3, none: 4 }
+
+    const priorityConfig = {
+        high: {
+            label: 'High',
+            class: 'bg-red-200 dark:bg-red-400/30 dark:text-red-200 dark:border-red-400/40 text-red-800 hover:bg-red-200 border-red-300/60',
+        },
+        medium: {
+            label: 'Medium',
+            class: 'bg-yellow-200 dark:bg-yellow-400/30 dark:text-yellow-200 dark:border-yellow-400/40 text-yellow-800 hover:bg-yellow-200 border-yellow-300/60',
+        },
+        low: {
+            label: 'Low',
+            class: 'bg-blue-200 dark:bg-blue-400/30 dark:text-blue-200 dark:border-blue-400/40 text-blue-800 hover:bg-blue-200 border-blue-300/60',
+        },
+        none: {
+            label: 'None',
+            class: 'bg-gray-200 dark:bg-gray-400/30 dark:text-gray-200 dark:border-gray-400/40 text-gray-800 hover:bg-gray-200 border-gray-300/60',
+        },
+    } as const
+
+    const PriorityBadge = ({
+        priority,
+    }: {
+        priority?: 'high' | 'medium' | 'low'
+    }) => {
+        const currentPriority = priority || 'none'
+        return (
+            <Badge
+                variant="outline"
+                className={`rounded-sm px-2 py-1 text-xs font-medium transition-colors ${
+                    priorityConfig[currentPriority].class
+                } ${!priority ? 'opacity-70' : ''}`}
+            >
+                {priorityConfig[currentPriority].label}
+            </Badge>
+        )
     }
 
     const handleClearInput = () => {
@@ -348,8 +407,12 @@ export default function BreakScheduler() {
             ? isLongBreak
                 ? ' - Long Break'
                 : ' - Short Break'
-            : taskInput ? ` - ${taskInput}` : ` - Work Session`
-        document.title = isRunning ? `${formatTime(timeLeft)}${breakType}` : `TimeWise`
+            : taskInput
+              ? ` - ${taskInput}`
+              : ` - Work Session`
+        document.title = isRunning
+            ? `${formatTime(timeLeft)}${breakType}`
+            : `TimeWise`
     }, [timeLeft, isBreak, isLongBreak, currentSession])
 
     const formatTime = (seconds: number) => {
@@ -610,81 +673,204 @@ export default function BreakScheduler() {
                             <CollapsibleContent>
                                 <ScrollArea className="bg-background shadow-sm">
                                     <div className="p-2 px-8 space-y-1">
-                                        {tasks.map((task) => (
-                                            <div
-                                                key={task.id}
-                                                onClick={() =>
-                                                    handleTaskClick(
-                                                        task.text,
-                                                        task.id
-                                                    )
+                                        {[...tasks]
+                                            .sort((a, b) => {
+                                                const aPriority =
+                                                    a.priority || 'none'
+                                                const bPriority =
+                                                    b.priority || 'none'
+                                                const orderA =
+                                                    priorityOrder[
+                                                        aPriority as keyof typeof priorityOrder
+                                                    ]
+                                                const orderB =
+                                                    priorityOrder[
+                                                        bPriority as keyof typeof priorityOrder
+                                                    ]
+                                                if (orderA !== orderB) {
+                                                    return orderA - orderB
                                                 }
-                                                className={`flex items-center justify-between p-2.5 hover:bg-muted/30 rounded-md group transition-colors cursor-pointer
-                                                    ${
-                                                        task.id ===
-                                                        selectedTaskId
-                                                            ? task.completed
-                                                                ? 'bg-lime-50 dark:bg-lime-900/20 border border-lime-200 dark:border-lime-800' // Selected && completed
-                                                                : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' // Selected && not completed
-                                                            : '' // Not selected && not completed
+                                                return a.createdAt - b.createdAt
+                                            })
+                                            .map((task) => (
+                                                <div
+                                                    key={task.id}
+                                                    onClick={() =>
+                                                        handleTaskClick(
+                                                            task.text,
+                                                            task.id
+                                                        )
                                                     }
-                                                    ${
-                                                        task.id ===
-                                                            selectedTaskId &&
-                                                        !task.completed
-                                                            ? 'border-l-4 rounded-l-none border-yellow-200 dark:border-yellow-800' // Selected && not completed
-                                                            : task.completed
-                                                              ? 'border-l-4 rounded-l-none dark:border-lime-800 border-lime-200' // Not selected && completed
-                                                              : 'border-l-4 rounded-l-none dark:border-zinc-800 border-zinc-200' // Not selected && not completed
-                                                    }
-                                                `}
-                                            >
-                                                <div className="flex items-center gap-3 flex-1">
-                                                    <Checkbox
-                                                        checked={task.completed}
-                                                        onCheckedChange={() =>
-                                                            handleToggleTaskCompletion(
-                                                                task.id
-                                                            )
-                                                        }
-                                                        onClick={(e) =>
-                                                            e.stopPropagation()
-                                                        }
-                                                    />
-                                                    <span
-                                                        className={`truncate transition-colors w-0 flex-1 ${
-                                                            task.completed
-                                                                ? 'text-primary/50 line-through'
-                                                                : 'text-primary/90 hover:text-primary'
-                                                        }`}
-                                                    >
-                                                        {task.text}
-                                                    </span>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            handleDeleteTask(
-                                                                task.id
-                                                            )
-                                                        }}
-                                                        className="h-7 w-7 p-1.5 text-red-600 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity ml-auto mr-2"
-                                                        title="Delete task"
-                                                    >
-                                                        <X className="h-3.5 w-3.5" />
-                                                    </Button>
+                                                    className={`flex items-center justify-between p-2.5 hover:bg-muted/30 rounded-md group transition-colors cursor-pointer
+                                        ${
+                                            task.id === selectedTaskId
+                                                ? task.completed
+                                                    ? 'bg-lime-50 dark:bg-lime-900/20 border border-lime-200 dark:border-lime-800'
+                                                    : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+                                                : ''
+                                        }
+                                        ${
+                                            task.id === selectedTaskId &&
+                                            !task.completed
+                                                ? 'border-l-4 rounded-l-none border-yellow-200 dark:border-yellow-800'
+                                                : task.completed
+                                                  ? 'border-l-4 rounded-l-none dark:border-lime-800 border-lime-200'
+                                                  : 'border-l-4 rounded-l-none dark:border-zinc-800 border-zinc-200'
+                                        }
+                                    `}
+                                                >
+                                                    <div className="flex items-center gap-3 flex-1">
+                                                        <Checkbox
+                                                            checked={
+                                                                task.completed
+                                                            }
+                                                            onCheckedChange={() =>
+                                                                handleToggleTaskCompletion(
+                                                                    task.id
+                                                                )
+                                                            }
+                                                            onClick={(e) =>
+                                                                e.stopPropagation()
+                                                            }
+                                                        />
+                                                        <span
+                                                            className={`truncate transition-colors w-0 flex-1 ${
+                                                                task.completed
+                                                                    ? 'text-primary/50 line-through'
+                                                                    : 'text-primary/90 hover:text-primary'
+                                                            }`}
+                                                        >
+                                                            {task.text}
+                                                        </span>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                handleDeleteTask(
+                                                                    task.id
+                                                                )
+                                                            }}
+                                                            className="h-7 w-7 p-1.5 text-red-600 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            title="Delete task"
+                                                        >
+                                                            <X className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 ml-4">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger className="focus:outline-none">
+                                                                <PriorityBadge
+                                                                    priority={
+                                                                        task.priority
+                                                                    }
+                                                                />
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent
+                                                                align="end"
+                                                                className="w-32 p-1"
+                                                            >
+                                                                <DropdownMenuItem
+                                                                    onClick={(
+                                                                        e
+                                                                    ) => {
+                                                                        e.stopPropagation()
+                                                                        setTimeout(
+                                                                            () => {
+                                                                                handlePriorityChange(
+                                                                                    task.id,
+                                                                                    'high'
+                                                                                )
+                                                                            },
+                                                                            120
+                                                                        )
+                                                                    }}
+                                                                    className="focus:bg-red-100 dark:focus:bg-red-500/20 cursor-pointer"
+                                                                >
+                                                                    <span className="text-red-500">
+                                                                        High
+                                                                    </span>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={(
+                                                                        e
+                                                                    ) => {
+                                                                        e.stopPropagation()
+                                                                        setTimeout(
+                                                                            () => {
+                                                                                handlePriorityChange(
+                                                                                    task.id,
+                                                                                    'medium'
+                                                                                )
+                                                                            },
+                                                                            120
+                                                                        )
+                                                                    }}
+                                                                    className="focus:bg-yellow-100 dark:focus:bg-yellow-500/20 cursor-pointer"
+                                                                >
+                                                                    <span className="text-yellow-500">
+                                                                        Medium
+                                                                    </span>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={(
+                                                                        e
+                                                                    ) => {
+                                                                        e.stopPropagation()
+                                                                        setTimeout(
+                                                                            () => {
+                                                                                handlePriorityChange(
+                                                                                    task.id,
+                                                                                    'low'
+                                                                                )
+                                                                            },
+                                                                            120
+                                                                        )
+                                                                    }}
+                                                                    className="focus:bg-blue-100 dark:focus:bg-blue-500/20 cursor-pointer"
+                                                                >
+                                                                    <span className="text-blue-500">
+                                                                        Low
+                                                                    </span>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={(
+                                                                        e
+                                                                    ) => {
+                                                                        e.stopPropagation()
+                                                                        setTimeout(
+                                                                            () => {
+                                                                                handlePriorityChange(
+                                                                                    task.id,
+                                                                                    undefined
+                                                                                )
+                                                                            },
+                                                                            120
+                                                                        )
+                                                                    }}
+                                                                    className="focus:bg-zinc-100 dark:focus:bg-zinc-500/20 cursor-pointer"
+                                                                >
+                                                                    <span className="text-zinc-500">
+                                                                        None
+                                                                    </span>
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                        <span className="text-xs text-muted-foreground font-mono">
+                                                            {new Date(
+                                                                task.createdAt
+                                                            ).toLocaleTimeString(
+                                                                [],
+                                                                {
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                }
+                                                            )}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <span className="ml-auto text-xs text-muted-foreground">
-                                                    {new Date(
-                                                        task.createdAt
-                                                    ).toLocaleTimeString([], {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
-                                                </span>
-                                            </div>
-                                        ))}
+                                            ))}
                                     </div>
                                 </ScrollArea>
                             </CollapsibleContent>
