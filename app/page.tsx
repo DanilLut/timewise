@@ -305,17 +305,19 @@ export default function BreakScheduler() {
     }
 
     const handleTaskInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newText = e.target.value;
-        setTaskInput(newText);
-    
+        const newText = e.target.value
+        setTaskInput(newText)
+
         if (selectedTaskId) {
             setTasks((prevTasks) =>
                 prevTasks.map((task) =>
-                    task.id === selectedTaskId ? { ...task, text: newText } : task
+                    task.id === selectedTaskId
+                        ? { ...task, text: newText }
+                        : task
                 )
-            );
+            )
         }
-    };
+    }
 
     const [enforceBreak, setEnforceBreak] = useState(true)
     const {
@@ -568,7 +570,7 @@ export default function BreakScheduler() {
                                             <span className="font-medium text-primary/90">
                                                 Saved Tasks
                                             </span>
-                                            <span className="bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-sm">
+                                            <span className="bg-primary/10 text-primary rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold">
                                                 {tasks.length}
                                             </span>
                                         </div>
