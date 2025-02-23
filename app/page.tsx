@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,8 +22,10 @@ import {
     CollapsibleContent,
 } from '@/components/ui/collapsible'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { ChevronDown, ChevronUp, X, Plus, Trash2, Cog } from 'lucide-react'
+import { ChevronDown, ChevronUp, X, Plus, Trash2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
+
+import { RiSettingsLine, RiTimerFill } from "@remixicon/react";
 
 interface Task {
     id: string
@@ -393,8 +395,8 @@ export default function BreakScheduler() {
     return (
         <ThemeProvider defaultTheme="system" storageKey="ui-theme">
             <div className="container mx-auto p-4 sm:px-8 px-4">
-                <div className="flex gap-2 mt-8 mb-6 flex-col sm:flex-row items-center">
-                    <h1 className="text-3xl font-bold sm:mr-auto">TimeWise</h1>
+                <div className="flex gap-4 mt-8 mb-6 flex-col sm:gap-2 sm:flex-row items-center">
+                    <h1 className="text-3xl font-bold sm:mr-auto flex items-center gap-2"><RiTimerFill size={36} /> TimeWise</h1>
                     <div className="flex gap-2">
                         <ThemeToggle />
                         <Dialog
@@ -403,7 +405,7 @@ export default function BreakScheduler() {
                         >
                             <DialogTrigger asChild>
                                 <Button variant="outline" size="icon">
-                                    <Cog className="h-4 w-4" />
+                                    <RiSettingsLine />
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="max-w-md">
