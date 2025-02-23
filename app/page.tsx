@@ -25,7 +25,12 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { ChevronDown, ChevronUp, X, Plus, Trash2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 
-import { RiSettingsLine, RiTimerFill } from "@remixicon/react";
+import {
+    RiSettingsLine,
+    RiTimerFill,
+    RiListCheck3,
+    RiSaveLine,
+} from '@remixicon/react'
 
 interface Task {
     id: string
@@ -160,6 +165,7 @@ export default function BreakScheduler() {
 
     const handleClearInput = () => {
         setTaskInput('')
+        setSelectedTaskId(null)
     }
 
     const handleTaskClick = (text: string, taskId: string) => {
@@ -396,7 +402,9 @@ export default function BreakScheduler() {
         <ThemeProvider defaultTheme="system" storageKey="ui-theme">
             <div className="container mx-auto p-4 sm:px-8 px-4">
                 <div className="flex gap-4 mt-8 mb-6 flex-col sm:gap-2 sm:flex-row items-center">
-                    <h1 className="text-3xl font-bold sm:mr-auto flex items-center gap-2"><RiTimerFill size={36} /> TimeWise</h1>
+                    <h1 className="text-3xl font-bold sm:mr-auto flex items-center gap-2">
+                        <RiTimerFill size={36} /> TimeWise
+                    </h1>
                     <div className="flex gap-2">
                         <ThemeToggle />
                         <Dialog
@@ -520,10 +528,14 @@ export default function BreakScheduler() {
 
                 {/* Task Input Section */}
                 <div className="mb-3 space-y-2">
-                    <div className="flex items-center gap-2 my-2">
-                        <Label>Session Focus</Label>
+                    <div className="flex items-center gap-1 my-2">
+                        <Label className="flex gap-1 items-center">
+                            <RiListCheck3 size={18} />
+                            Session Task
+                        </Label>
+                        <span className="text-sm text-primary/60">•</span>
                         <span className="text-sm text-primary/60">
-                            • Press Enter to save
+                            Press Enter to save
                         </span>
                     </div>
                     <div className="flex gap-2 relative">
@@ -569,7 +581,8 @@ export default function BreakScheduler() {
                                         className="w-full justify-between px-4 py-2 hover:bg-muted/30 rounded-lg transition-colors"
                                     >
                                         <div className="flex items-center gap-2">
-                                            <span className="font-medium text-primary/90">
+                                            <span className="font-medium flex items-center gap-1">
+                                                <RiSaveLine size={24} />
                                                 Saved Tasks
                                             </span>
                                             <span className="bg-primary/10 text-primary rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold">
@@ -596,7 +609,7 @@ export default function BreakScheduler() {
 
                             <CollapsibleContent>
                                 <ScrollArea className="bg-background shadow-sm">
-                                    <div className="p-2 space-y-1">
+                                    <div className="p-2 px-8 space-y-1">
                                         {tasks.map((task) => (
                                             <div
                                                 key={task.id}
