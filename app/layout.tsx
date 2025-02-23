@@ -4,7 +4,8 @@ import './globals.css'
 
 export const metadata: Metadata = {
     title: 'TimeWise',
-    description: 'TimeWise is a web-based Pomodoro timer. Customize work and break durations, manage tasks, and stay focused!',
+    description:
+        'TimeWise is a web-based Pomodoro timer. Customize work and break durations, manage tasks, and stay focused!',
 }
 
 export default function RootLayout({

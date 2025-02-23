@@ -23,19 +23,21 @@ import {
 } from '@/components/ui/collapsible'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ChevronDown, ChevronUp, X, Plus, Trash2, Cog } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface Task {
     id: string
     text: string
     createdAt: number
+    completed: boolean
 }
 
 interface TimerConfig {
-    workDuration: number;
-    shortBreakDuration: number;
-    longBreakDuration: number;
-    sessionsBeforeLongBreak: number;
-    totalCycles: number;
+    workDuration: number
+    shortBreakDuration: number
+    longBreakDuration: number
+    sessionsBeforeLongBreak: number
+    totalCycles: number
 }
 
 // Format seconds to human-readable time
@@ -105,6 +107,7 @@ export default function BreakScheduler() {
     const [isMounted, setIsMounted] = useState(false)
     const [taskInput, setTaskInput] = useState('')
     const [tasks, setTasks] = useState<Task[]>([])
+    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
     // Initialize from localStorage after mount
     useEffect(() => {
@@ -112,7 +115,17 @@ export default function BreakScheduler() {
         setTaskInput(localStorage.getItem('breakTimerTask') || '')
         const savedTasks = localStorage.getItem('breakTimerTasks')
         setTasks(savedTasks ? JSON.parse(savedTasks) : [])
+
+        // Load selectedTaskId from localStorage
+        const savedSelectedTask = localStorage.getItem('selectedTaskId')
+        setSelectedTaskId(savedSelectedTask || null)
     }, [])
+
+    useEffect(() => {
+        if (isMounted) {
+            localStorage.setItem('selectedTaskId', selectedTaskId || '')
+        }
+    }, [selectedTaskId, isMounted])
 
     // Persist task input
     useEffect(() => {
@@ -136,6 +149,7 @@ export default function BreakScheduler() {
                     id: Date.now().toString(),
                     text: taskInput.trim(),
                     createdAt: Date.now(),
+                    completed: false,
                 },
             ])
             setTaskInput('')
@@ -146,18 +160,33 @@ export default function BreakScheduler() {
         setTaskInput('')
     }
 
-    const handleTaskClick = (text: string) => {
-        setTaskInput(text)
+    const handleTaskClick = (text: string, taskId: string) => {
+        setTaskInput((prevInput) => (selectedTaskId === taskId ? '' : text))
+        setSelectedTaskId((prevId) => (prevId === taskId ? null : taskId))
+    }
+
+    const handleToggleTaskCompletion = (taskId: string) => {
+        setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+                task.id === taskId
+                    ? { ...task, completed: !task.completed }
+                    : task
+            )
+        )
     }
 
     const [isTasksOpen, setIsTasksOpen] = useState(false)
 
     const handleDeleteTask = (taskId: string) => {
         setTasks((prev) => prev.filter((task) => task.id !== taskId))
+        if (selectedTaskId === taskId) {
+            setSelectedTaskId(null)
+        }
     }
 
     const handleDeleteAllTasks = () => {
         setTasks([])
+        setSelectedTaskId(null)
     }
 
     const [config, setConfig] = useState<TimerConfig>(() => {
@@ -350,118 +379,125 @@ export default function BreakScheduler() {
         <ThemeProvider defaultTheme="system" storageKey="ui-theme">
             <div className="container mx-auto p-4 sm:px-8 px-4">
                 <div className="flex gap-2 mt-8 mb-6 flex-col sm:flex-row items-center">
-                    <h1 className="text-3xl font-bold sm:mr-auto">
-                        TimeWise
-                    </h1>
+                    <h1 className="text-3xl font-bold sm:mr-auto">TimeWise</h1>
                     <div className="flex gap-2">
-                    <ThemeToggle />
-                    <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="icon">
-                                <Cog className="h-4 w-4" />
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md">
-                            <DialogHeader>
-                                <DialogTitle>Configuration</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid grid-cols-2 gap-4">
-                                {inputConfig.map(({ id, label, field }) => (
-                                    <div key={id}>
-                                        <Label htmlFor={id}>{label}</Label>
-                                        <Input
-                                            id={id}
-                                            value={
-                                                rawInputs[
-                                                    field as keyof typeof rawInputs
-                                                ]
-                                            }
-                                            onChange={handleRawInputChange(
-                                                field as keyof typeof rawInputs
-                                            )}
-                                            onKeyDown={handleKeyPress(
-                                                field as keyof typeof rawInputs
-                                            )}
-                                            onBlur={() => {
-                                                const currentValue =
+                        <ThemeToggle />
+                        <Dialog
+                            open={isConfigOpen}
+                            onOpenChange={setIsConfigOpen}
+                        >
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="icon">
+                                    <Cog className="h-4 w-4" />
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Configuration</DialogTitle>
+                                </DialogHeader>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {inputConfig.map(({ id, label, field }) => (
+                                        <div key={id}>
+                                            <Label htmlFor={id}>{label}</Label>
+                                            <Input
+                                                id={id}
+                                                value={
                                                     rawInputs[
                                                         field as keyof typeof rawInputs
                                                     ]
-                                                const parsed =
-                                                    parseTimeExpression(
-                                                        currentValue,
-                                                        config[
-                                                            field as keyof typeof config
-                                                        ]
-                                                    )
-                                                if (
-                                                    !isNaN(parsed) &&
-                                                    parsed >= 0
-                                                ) {
-                                                    setConfig((prev) => ({
-                                                        ...prev,
-                                                        [field]: parsed,
-                                                    }))
-                                                    setRawInputs((prev) => ({
-                                                        ...prev,
-                                                        [field]:
-                                                            formatSecondsToTime(
-                                                                parsed
-                                                            ),
-                                                    }))
-                                                } else {
-                                                    setRawInputs((prev) => ({
-                                                        ...prev,
-                                                        [field]:
-                                                            formatSecondsToTime(
-                                                                config[
-                                                                    field as keyof typeof config
-                                                                ]
-                                                            ),
-                                                    }))
                                                 }
-                                            }}
-                                            placeholder="e.g., 1m 30s, 150+5s"
-                                        />
-                                        <div className="text-sm text-muted-foreground mt-1">
-                                            {
-                                                config[
-                                                    field as keyof typeof config
-                                                ]
-                                            }{' '}
-                                            seconds
+                                                onChange={handleRawInputChange(
+                                                    field as keyof typeof rawInputs
+                                                )}
+                                                onKeyDown={handleKeyPress(
+                                                    field as keyof typeof rawInputs
+                                                )}
+                                                onBlur={() => {
+                                                    const currentValue =
+                                                        rawInputs[
+                                                            field as keyof typeof rawInputs
+                                                        ]
+                                                    const parsed =
+                                                        parseTimeExpression(
+                                                            currentValue,
+                                                            config[
+                                                                field as keyof typeof config
+                                                            ]
+                                                        )
+                                                    if (
+                                                        !isNaN(parsed) &&
+                                                        parsed >= 0
+                                                    ) {
+                                                        setConfig((prev) => ({
+                                                            ...prev,
+                                                            [field]: parsed,
+                                                        }))
+                                                        setRawInputs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [field]:
+                                                                    formatSecondsToTime(
+                                                                        parsed
+                                                                    ),
+                                                            })
+                                                        )
+                                                    } else {
+                                                        setRawInputs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [field]:
+                                                                    formatSecondsToTime(
+                                                                        config[
+                                                                            field as keyof typeof config
+                                                                        ]
+                                                                    ),
+                                                            })
+                                                        )
+                                                    }
+                                                }}
+                                                placeholder="e.g., 1m 30s, 150+5s"
+                                            />
+                                            <div className="text-sm text-muted-foreground mt-1">
+                                                {
+                                                    config[
+                                                        field as keyof typeof config
+                                                    ]
+                                                }{' '}
+                                                seconds
+                                            </div>
                                         </div>
+                                    ))}
+                                    <div>
+                                        <Label htmlFor="sessionsBeforeLongBreak">
+                                            Sessions before Long Break
+                                        </Label>
+                                        <Input
+                                            id="sessionsBeforeLongBreak"
+                                            name="sessionsBeforeLongBreak"
+                                            type="number"
+                                            min="1"
+                                            value={
+                                                config.sessionsBeforeLongBreak
+                                            }
+                                            onChange={handleConfigChange}
+                                        />
                                     </div>
-                                ))}
-                                <div>
-                                    <Label htmlFor="sessionsBeforeLongBreak">
-                                        Sessions before Long Break
-                                    </Label>
-                                    <Input
-                                        id="sessionsBeforeLongBreak"
-                                        name="sessionsBeforeLongBreak"
-                                        type="number"
-                                        min="1"
-                                        value={config.sessionsBeforeLongBreak}
-                                        onChange={handleConfigChange}
-                                    />
+                                    <div>
+                                        <Label htmlFor="totalCycles">
+                                            Total Cycles (0 for infinite)
+                                        </Label>
+                                        <Input
+                                            id="totalCycles"
+                                            name="totalCycles"
+                                            type="number"
+                                            min="0"
+                                            value={config.totalCycles}
+                                            onChange={handleConfigChange}
+                                        />
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label htmlFor="totalCycles">
-                                        Total Cycles (0 for infinite)
-                                    </Label>
-                                    <Input
-                                        id="totalCycles"
-                                        name="totalCycles"
-                                        type="number"
-                                        min="0"
-                                        value={config.totalCycles}
-                                        onChange={handleConfigChange}
-                                    />
-                                </div>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 </div>
 
@@ -547,31 +583,76 @@ export default function BreakScheduler() {
                                         {tasks.map((task) => (
                                             <div
                                                 key={task.id}
-                                                className="flex items-center justify-between p-2.5 hover:bg-muted/30 rounded-md group transition-colors cursor-pointer"
+                                                onClick={() =>
+                                                    handleTaskClick(
+                                                        task.text,
+                                                        task.id
+                                                    )
+                                                }
+                                                className={`flex items-center justify-between p-2.5 hover:bg-muted/30 rounded-md group transition-colors cursor-pointer
+                                                    ${
+                                                        task.id ===
+                                                        selectedTaskId
+                                                            ? task.completed
+                                                                ? 'bg-lime-50 dark:bg-lime-900/20 border border-lime-200 dark:border-lime-800' // Selected && completed
+                                                                : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' // Selected && not completed
+                                                            : '' // Not selected && not completed
+                                                    }
+                                                    ${
+                                                        task.id ===
+                                                            selectedTaskId &&
+                                                        !task.completed
+                                                            ? 'border-l-4 rounded-l-none border-yellow-200 dark:border-yellow-800' // Selected && not completed
+                                                            : task.completed
+                                                              ? 'border-l-4 rounded-l-none dark:border-lime-800 border-lime-200' // Not selected && completed
+                                                              : 'border-l-4 rounded-l-none dark:border-zinc-800 border-zinc-200' // Not selected && not completed
+                                                    }
+                                                `}
                                             >
-                                                <span
-                                                    className="flex-1 text-primary/90 truncate hover:text-primary transition-colors"
-                                                    onClick={() =>
-                                                        handleTaskClick(
-                                                            task.text
-                                                        )
-                                                    }
-                                                >
-                                                    {task.text}
+                                                <div className="flex items-center gap-3 flex-1">
+                                                    <Checkbox
+                                                        checked={task.completed}
+                                                        onCheckedChange={() =>
+                                                            handleToggleTaskCompletion(
+                                                                task.id
+                                                            )
+                                                        }
+                                                        onClick={(e) =>
+                                                            e.stopPropagation()
+                                                        }
+                                                    />
+                                                    <span
+                                                        className={`truncate transition-colors w-0 flex-1 ${
+                                                            task.completed
+                                                                ? 'text-primary/50 line-through'
+                                                                : 'text-primary/90 hover:text-primary'
+                                                        }`}
+                                                    >
+                                                        {task.text}
+                                                    </span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            handleDeleteTask(
+                                                                task.id
+                                                            )
+                                                        }}
+                                                        className="h-7 w-7 p-1.5 text-red-600 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity ml-auto mr-2"
+                                                        title="Delete task"
+                                                    >
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </div>
+                                                <span className="ml-auto text-xs text-muted-foreground">
+                                                    {new Date(
+                                                        task.createdAt
+                                                    ).toLocaleTimeString([], {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    })}
                                                 </span>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-7 w-7 p-1.5 text-red-600 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    onClick={() =>
-                                                        handleDeleteTask(
-                                                            task.id
-                                                        )
-                                                    }
-                                                    title="Delete task"
-                                                >
-                                                    <X className="h-3.5 w-3.5" />
-                                                </Button>
                                             </div>
                                         ))}
                                     </div>
@@ -583,9 +664,6 @@ export default function BreakScheduler() {
 
                 <div className="grid grid-cols-1 gap-6 mt-8">
                     <Card className="border-none">
-                        {/* <CardHeader>
-                            <CardTitle>Timer</CardTitle>
-                        </CardHeader> */}
                         <CardContent className="sm:block grid sm:text-left text-center justify-center">
                             <div className="text-6xl font-bold mb-4">
                                 {formatTime(timeLeft)}
