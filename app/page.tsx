@@ -346,10 +346,10 @@ export default function BreakScheduler() {
     useEffect(() => {
         let breakType = isBreak
             ? isLongBreak
-                ? 'Long Break'
-                : 'Short Break'
-            : `Work Session ${currentSession}`
-        document.title = `${formatTime(timeLeft)} - ${breakType}`
+                ? ' - Long Break'
+                : ' - Short Break'
+            : taskInput ? ` - ${taskInput}` : ` - Work Session`
+        document.title = isRunning ? `${formatTime(timeLeft)}${breakType}` : `TimeWise`
     }, [timeLeft, isBreak, isLongBreak, currentSession])
 
     const formatTime = (seconds: number) => {
