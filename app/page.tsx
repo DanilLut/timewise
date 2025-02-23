@@ -304,6 +304,19 @@ export default function BreakScheduler() {
         }
     }
 
+    const handleTaskInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newText = e.target.value;
+        setTaskInput(newText);
+    
+        if (selectedTaskId) {
+            setTasks((prevTasks) =>
+                prevTasks.map((task) =>
+                    task.id === selectedTaskId ? { ...task, text: newText } : task
+                )
+            );
+        }
+    };
+
     const [enforceBreak, setEnforceBreak] = useState(true)
     const {
         timeLeft,
@@ -512,7 +525,7 @@ export default function BreakScheduler() {
                     <div className="flex gap-2 relative">
                         <Input
                             value={taskInput}
-                            onChange={(e) => setTaskInput(e.target.value)}
+                            onChange={handleTaskInputChange}
                             placeholder="✨ What's your focus for this session?"
                             className="flex-1 pl-4 pr-20 py-5"
                             onKeyDown={(e) =>
