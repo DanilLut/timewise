@@ -6,6 +6,8 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
+        "build:gh": "NEXT_CONFIG_ENV=gh next build",
+        "build:local": "NEXT_CONFIG_ENV=local next build",
         "deploy": "touch ./out/.nojekyll && gh-pages -d out -t",
         "start": "next start",
         "lint": "next lint"

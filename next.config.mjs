@@ -1,12 +1,19 @@
-let userConfig = undefined
-try {
-    userConfig = await import('./v0-user-next.config')
-} catch (e) {
-    // ignore error
-}
+const env = process.env.NEXT_CONFIG_ENV || 'gh';
+
+let nextConfig = {
+  local: {
+    distDir: 'out_local',
+  },
+  gh: {
+    distDir: 'out',
+    basePath: '/timewise',
+    assetPrefix: '/timewise/',
+  },
+}[env];
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+nextConfig = {
+    ...nextConfig,
     eslint: {
         ignoreDuringBuilds: true,
     },
@@ -14,39 +21,15 @@ const nextConfig = {
         ignoreBuildErrors: true,
     },
     output: 'export',
-    basePath: '/timewise',
     images: {
         unoptimized: true,
     },
-    assetPrefix: '/timewise/',
     experimental: {
         webpackBuildWorker: true,
         parallelServerBuildTraces: true,
         parallelServerCompiles: true,
     },
     transpilePackages: ['geist'],
-}
-
-mergeConfig(nextConfig, userConfig)
-
-function mergeConfig(nextConfig, userConfig) {
-    if (!userConfig) {
-        return
-    }
-
-    for (const key in userConfig) {
-        if (
-            typeof nextConfig[key] === 'object' &&
-            !Array.isArray(nextConfig[key])
-        ) {
-            nextConfig[key] = {
-                ...nextConfig[key],
-                ...userConfig[key],
-            }
-        } else {
-            nextConfig[key] = userConfig[key]
-        }
-    }
 }
 
 export default nextConfig
